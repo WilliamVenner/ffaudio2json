@@ -22,4 +22,5 @@ strum = "0.26"
 build-data = "0.2"
 
 [patch.crates-io.ffmpeg-next]
-path = "C:/Users/William/Documents/GitHub/rust-ffmpeg"
+git = "https://github.com/WilliamVenner/rust-ffmpeg.git"
+branch = "feat/8-channel-sample-impl"
