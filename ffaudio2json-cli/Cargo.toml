@@ -15,8 +15,6 @@ path = "src/main.rs"
 [dependencies]
 ffaudio2json = { path = "../" }
 clap = { version = "4", features = ["derive"] }
-strum_macros = "0.26"
-strum = "0.26"
 
 [dev-dependencies]
 image = { version = "0.25", default-features = false, features = ["png"] }

@@ -15,6 +15,11 @@ default-members = ["ffaudio2json-cli"]
 ffmpeg-next = "7"
 thiserror = "1"
 derive_builder = "0.20"
+strum_macros = "0.26"
+strum = "0.26"
 
 [build-dependencies]
 build-data = "0.2"
+
+[patch.crates-io.ffmpeg-next]
+path = "C:/Users/William/Documents/GitHub/rust-ffmpeg"

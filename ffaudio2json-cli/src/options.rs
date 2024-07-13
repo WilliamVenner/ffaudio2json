@@ -1,3 +1,4 @@
+use ffaudio2json::Channel;
 use std::path::PathBuf;
 
 #[derive(Debug, clap::Parser)]
@@ -60,29 +61,6 @@ impl From<Options> for ffaudio2json::Config {
 			output: val.output,
 			input: val.input,
 			channels: val.channels.into_iter().map(Into::into).collect(),
-		}
-	}
-}
-
-#[derive(Debug, Clone, Copy, strum_macros::EnumString)]
-#[strum(serialize_all = "lowercase")]
-pub enum Channel {
-	Left,
-	Right,
-	Mid,
-	Side,
-	Min,
-	Max,
-}
-impl From<Channel> for ffaudio2json::Channel {
-	fn from(val: Channel) -> Self {
-		match val {
-			Channel::Left => ffaudio2json::Channel::Left,
-			Channel::Right => ffaudio2json::Channel::Right,
-			Channel::Mid => ffaudio2json::Channel::Mid,
-			Channel::Side => ffaudio2json::Channel::Side,
-			Channel::Min => ffaudio2json::Channel::Min,
-			Channel::Max => ffaudio2json::Channel::Max,
 		}
 	}
 }

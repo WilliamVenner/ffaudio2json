@@ -1,5 +1,6 @@
 //! Configuration for the behaviour of FfAudio2Json
 
+use crate::channels::Channel;
 use std::path::PathBuf;
 
 #[derive(Debug, derive_builder::Builder)]
@@ -55,26 +56,4 @@ impl Default for Config {
 			input: PathBuf::new(),
 		}
 	}
-}
-
-#[derive(Debug, Clone, Copy)]
-/// The channels to compute
-pub enum Channel {
-	/// The left channel
-	Left,
-
-	/// The right channel
-	Right,
-
-	/// The mid channel
-	Mid,
-
-	/// The side channel
-	Side,
-
-	/// The min channel
-	Min,
-
-	/// The max channel
-	Max,
 }

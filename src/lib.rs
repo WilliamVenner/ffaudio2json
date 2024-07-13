@@ -6,13 +6,16 @@
 
 #![warn(missing_docs)]
 
-use ffmpeg_next as ffmpeg;
+extern crate ffmpeg_next as ffmpeg;
+
 use std::{
 	borrow::Cow,
 	ffi::OsStr,
-	fs::File,
-	io::{BufWriter, Write},
+	fs::{File, OpenOptions},
+	io::{BufWriter, Seek, SeekFrom, Write},
+	path::Path,
 };
+use strum::EnumCount;
 
 mod error;
 pub use error::Error;
@@ -20,22 +23,48 @@ pub use error::Error;
 mod config;
 pub use config::*;
 
+mod channels;
+pub use channels::Channel;
+
+mod audio;
 mod util;
 
 const JSON_HEADER: &str = concat!(
-	"  \"_generator\":\"ffaudio2json version ",
+	"\n  \"_generator\":\"ffaudio2json version ",
 	env!("CARGO_PKG_VERSION"),
 	" on ",
 	env!("TARGET_PLATFORM"),
-	" (https://github.com/WilliamVenner/ffaudio2json)\",\n"
+	" (https://github.com/WilliamVenner/ffaudio2json)\","
 );
+
+struct GeneratorContext<'a> {
+	channel_writers: [Option<ChannelWriter>; Channel::COUNT],
+	config: &'a Config,
+}
+
+struct ChannelWriter {
+	inner: BufWriter<File>,
+	first_sample: bool,
+}
+impl ChannelWriter {
+	fn write(&mut self, sample: f64, config: &Config) -> Result<(), std::io::Error> {
+		if !core::mem::replace(&mut self.first_sample, false) {
+			write!(self.inner, ",")?;
+		}
+
+		write!(self.inner, "{sample:.precision$}", precision = config.precision)?;
+
+		Ok(())
+	}
+}
 
 impl Config {
 	/// Generate the JSON waveform
 	pub fn run(self) -> Result<(), Error> {
-		let mut output = self.open_output_file()?;
+		let output_path = self.output_file_path();
+		let mut output = BufWriter::new(File::create(&output_path)?);
 
-		output.write_all(b"{\n")?;
+		output.write_all(b"{")?;
 
 		if !self.no_header {
 			output.write_all(JSON_HEADER.as_bytes())?;
@@ -63,95 +92,68 @@ impl Config {
 		let dst_sample_rate = input_duration / (self.samples as f64).min(input_samples);
 		let resample_rate = (dst_sample_rate * decoder.rate() as f64) as usize;
 
-		let mut buffer = Vec::with_capacity(resample_rate * 2);
+		let samples_width = (self.samples as usize * (self.precision + 3)) - 1;
+		let mut channel_writers = std::array::from_fn::<Option<ChannelWriter>, { Channel::COUNT }, _>(|_| None);
+		for (channel, writer) in self.channels.iter().zip(channel_writers.iter_mut()) {
+			write!(output, "\n  \"{channel}\":[")?;
 
-		output.write_all(b"  \"mid\":[")?;
+			*writer = Some(ChannelWriter {
+				inner: {
+					let mut writer = self.open_output_file_writer(&output_path)?;
+					writer.seek(SeekFrom::Start(output.stream_position()?))?;
+					BufWriter::new(writer)
+				},
+				first_sample: true,
+			});
 
-		let process_frame = |decoded: &ffmpeg::frame::Audio, buffer: &mut Vec<i16>| {
-			match (decoded.format(), decoded.channels()) {
-				(ffmpeg_next::format::Sample::I16(_), 1) => {
-					let samples: &[i16] = decoded.plane(0);
-
-					// TODO optimise
-					buffer.extend_from_slice(samples);
-				}
-
-				_ => {
-					return Err(Error::UnsupportedFormat {
-						format: decoded.format(),
-						channels: decoded.channels(),
-					})
-				}
-			}
-			Ok(())
-		};
-
-		for (_, packet) in ictx.packets().filter(|(this, _)| this.index() == stream_idx) {
-			decoder.send_packet(&packet)?;
-
-			let mut decoded = ffmpeg::frame::Audio::empty();
-			while decoder.receive_frame(&mut decoded).is_ok() {
-				process_frame(&decoded, &mut buffer)?;
-			}
+			write!(output, "{:samples_width$}],", ' ', samples_width = samples_width)?;
 		}
+		output.flush()?;
 
-		decoder.send_eof()?;
+		println!("Generating waveform...");
+		println!(
+			"Codec: {} Channel(s): {} Samples: {:?}",
+			codec.description(),
+			decoder.channels(),
+			decoder.format()
+		);
 
-		let mut decoded = ffmpeg::frame::Audio::empty();
-		while decoder.receive_frame(&mut decoded).is_ok() {
-			process_frame(&decoded, &mut buffer)?;
-		}
+		audio::process(
+			&mut ictx,
+			&mut decoder,
+			stream_idx,
+			resample_rate,
+			GeneratorContext {
+				channel_writers,
+				config: &self,
+			},
+		)?;
+		output.flush()?;
 
-		{
-			let mut f = BufWriter::new(File::create("output.raw")?);
-			for s in &buffer {
-				f.write_all(&s.to_le_bytes())?;
-			}
-			f.flush()?;
-		}
-
-		buffer
-			.chunks(resample_rate)
-			.map(|chunk| {
-				let sample = chunk.iter().copied().map(|sample| sample.unsigned_abs()).max().unwrap() as f64;
-
-				if self.db_scale {
-					util::map2range(
-						if sample == 0.0 { f64::NEG_INFINITY } else { 20.0 * sample.log10() },
-						self.db_min,
-						self.db_max,
-						0.0,
-						1.0,
-					)
-				} else {
-					util::map2range(sample, 0.0, i16::MIN.unsigned_abs() as f64, 0.0, 1.0)
-				}
-			})
-			.enumerate()
-			.try_for_each(|(i, sample)| {
-				if i != 0 {
-					output.write_all(b",")?;
-				}
-
-				write!(output, "{sample:.precision$}", precision = self.precision)?;
-
-				Ok::<_, Error>(())
-			})?;
-
-		write!(output, "],\n  \"duration\":{input_duration}\n}}")?;
+		write!(output, "\n  \"duration\":{input_duration}\n}}")?;
+		output.flush()?;
 
 		Ok(())
 	}
 
-	fn open_output_file(&self) -> Result<impl Write, Error> {
-		Ok(BufWriter::new(File::create(self.output.as_deref().map(Cow::Borrowed).unwrap_or_else(
-			|| {
-				let mut file_name = self.input.file_name().unwrap_or(OsStr::new("output")).to_os_string();
+	fn output_file_path(&self) -> Cow<'_, Path> {
+		self.output.as_deref().map(Cow::Borrowed).unwrap_or_else(|| {
+			let mut file_name = self.input.file_name().unwrap_or(OsStr::new("output")).to_os_string();
 
-				file_name.push(OsStr::new(".json"));
+			file_name.push(OsStr::new(".json"));
 
-				Cow::Owned(self.input.with_file_name(file_name))
-			},
-		))?))
+			Cow::Owned(self.input.with_file_name(file_name))
+		})
+	}
+
+	fn open_output_file_writer(&self, path: &Path) -> Result<File, std::io::Error> {
+		OpenOptions::new()
+			.create(false)
+			.create_new(false)
+			.write(true)
+			.truncate(false)
+			.append(false)
+			.read(false)
+			.open(path)
 	}
 }

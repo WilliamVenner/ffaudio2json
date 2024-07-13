@@ -310,6 +310,8 @@ dependencies = [
  "build-data",
  "derive_builder",
  "ffmpeg-next",
+ "strum",
+ "strum_macros",
  "thiserror",
 ]
 
@@ -322,15 +324,11 @@ dependencies = [
  "image",
  "serde",
  "serde_json",
- "strum",
- "strum_macros",
 ]
 
 [[package]]
 name = "ffmpeg-next"
 version = "7.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ddfce5242643c8a57b5a44b7e933ccbde85f9508d1379e578e97eee4a9d4334b"
 dependencies = [
  "bitflags 2.6.0",
  "ffmpeg-sys-next",
