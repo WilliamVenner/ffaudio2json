@@ -28,6 +28,7 @@ pub struct Config {
 	pub output: Option<PathBuf>,
 
 	/// Channels to compute
+	// TODO assert not empty
 	pub channels: Vec<Channel>,
 
 	/// The path to the input audio file

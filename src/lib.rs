@@ -8,14 +8,15 @@
 
 extern crate ffmpeg_next as ffmpeg;
 
+use channels::{ChannelWriter, Channels};
 use std::{
 	borrow::Cow,
 	ffi::OsStr,
 	fs::{File, OpenOptions},
 	io::{BufWriter, Seek, SeekFrom, Write},
 	path::Path,
+	time::{Duration, Instant},
 };
-use strum::EnumCount;
 
 mod error;
 pub use error::Error;
@@ -25,6 +26,7 @@ pub use config::*;
 
 mod channels;
 pub use channels::Channel;
+pub use strum::{IntoEnumIterator, VariantArray};
 
 mod audio;
 mod util;
@@ -38,29 +40,18 @@ const JSON_HEADER: &str = concat!(
 );
 
 struct GeneratorContext<'a> {
-	channel_writers: [Option<ChannelWriter>; Channel::COUNT],
+	buffer_capacity: usize,
+	channels: Channels<ChannelWriter>,
 	config: &'a Config,
-}
-
-struct ChannelWriter {
-	inner: BufWriter<File>,
-	first_sample: bool,
-}
-impl ChannelWriter {
-	fn write(&mut self, sample: f64, config: &Config) -> Result<(), std::io::Error> {
-		if !core::mem::replace(&mut self.first_sample, false) {
-			write!(self.inner, ",")?;
-		}
-
-		write!(self.inner, "{sample:.precision$}", precision = config.precision)?;
-
-		Ok(())
-	}
 }
 
 impl Config {
 	/// Generate the JSON waveform
 	pub fn run(self) -> Result<(), Error> {
+		let now = Instant::now();
+
+		let input_file_size = self.input.metadata()?.len();
+
 		let output_path = self.output_file_path();
 		let mut output = BufWriter::new(File::create(&output_path)?);
 
@@ -73,6 +64,14 @@ impl Config {
 		ffmpeg::init()?;
 
 		let mut ictx = ffmpeg::format::input(&self.input)?;
+
+		let pts = (|| {
+			// Seek to the last frame
+			ictx.seek(i64::MAX, 0..i64::MAX)?;
+			let pts = ictx.packets().last().and_then(|(_, packet)| packet.pts());
+			ictx.seek(0, 0..i64::MAX)?;
+			Ok::<_, Error>(pts)
+		})();
 
 		let stream = ictx.streams().best(ffmpeg::media::Type::Audio).ok_or(ffmpeg::Error::StreamNotFound)?;
 
@@ -87,44 +86,63 @@ impl Config {
 			.open_as(codec)?
 			.audio()?;
 
-		let input_duration = stream.duration() as f64 * f64::from(stream.time_base());
+		let input_duration = Some(stream.duration())
+			.filter(|duration| *duration != i64::MIN)
+			.or_else(|| pts.expect("failed to seek to last frame in order to determine stream duration"))
+			.expect("unable to determine stream duration") as f64
+			* f64::from(stream.time_base());
+
+		eprintln!("Audio duration: {:?}", Duration::from_secs_f64(input_duration));
+
 		let input_samples = input_duration * decoder.rate() as f64;
 		let dst_sample_rate = input_duration / (self.samples as f64).min(input_samples);
 		let resample_rate = (dst_sample_rate * decoder.rate() as f64) as usize;
 
-		let samples_width = (self.samples as usize * (self.precision + 3)) - 1;
-		let mut channel_writers = std::array::from_fn::<Option<ChannelWriter>, { Channel::COUNT }, _>(|_| None);
-		for (channel, writer) in self.channels.iter().zip(channel_writers.iter_mut()) {
-			write!(output, "\n  \"{channel}\":[")?;
+		let mut channels = Channels::<ChannelWriter>::default();
+		{
+			let samples_width = (self.samples as usize * (self.precision + 3)) - 1;
 
-			*writer = Some(ChannelWriter {
-				inner: {
+			self.channels.iter().copied().try_for_each(|channel| {
+				write!(output, "\n  \"{channel}\":[")?;
+
+				let writer = ChannelWriter::new({
 					let mut writer = self.open_output_file_writer(&output_path)?;
 					writer.seek(SeekFrom::Start(output.stream_position()?))?;
 					BufWriter::new(writer)
-				},
-				first_sample: true,
-			});
+				});
 
-			write!(output, "{:samples_width$}],", ' ', samples_width = samples_width)?;
+				match channel {
+					Channel::Left => channels.left = Some(writer),
+					Channel::Right => channels.right = Some(writer),
+					Channel::Mid => channels.mid = Some(writer),
+					Channel::Side => channels.side = Some(writer),
+					Channel::Min => channels.min = Some(writer),
+					Channel::Max => channels.max = Some(writer),
+				}
+
+				write!(output, "{:samples_width$}],", ' ', samples_width = samples_width)?;
+
+				Ok::<_, std::io::Error>(())
+			})?;
 		}
+
 		output.flush()?;
 
-		println!("Generating waveform...");
-		println!(
+		eprintln!(
 			"Codec: {} Channel(s): {} Samples: {:?}",
 			codec.description(),
 			decoder.channels(),
 			decoder.format()
 		);
+		eprintln!("Generating waveform...");
 
 		audio::process(
 			&mut ictx,
 			&mut decoder,
 			stream_idx,
-			resample_rate,
 			GeneratorContext {
-				channel_writers,
+				channels,
+				buffer_capacity: resample_rate,
 				config: &self,
 			},
 		)?;
@@ -132,6 +150,16 @@ impl Config {
 
 		write!(output, "\n  \"duration\":{input_duration}\n}}")?;
 		output.flush()?;
+
+		let elapsed = now.elapsed();
+		eprintln!(
+			"Took {:?} ({:.2} MiB/s) ({:?} of audio/s)",
+			elapsed,
+			input_file_size as f64 / elapsed.as_secs_f64() / 1024.0 / 1024.0,
+			Duration::try_from_secs_f64(input_duration / elapsed.as_secs_f64()).unwrap_or(Duration::ZERO)
+		);
+
+		println!("{}", output_path.display());
 
 		Ok(())
 	}
@@ -157,3 +185,5 @@ impl Config {
 			.open(path)
 	}
 }
+
+// TODO log

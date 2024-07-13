@@ -322,7 +322,6 @@ dependencies = [
  "clap",
  "ffaudio2json",
  "image",
- "serde",
  "serde_json",
 ]
 
