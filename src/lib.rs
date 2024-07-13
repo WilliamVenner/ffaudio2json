@@ -23,11 +23,11 @@ pub use config::*;
 mod util;
 
 const JSON_HEADER: &str = concat!(
-	"  \"_generator\":\"wav2json-rs version ",
+	"  \"_generator\":\"ffaudio2json version ",
 	env!("CARGO_PKG_VERSION"),
 	" on ",
 	env!("TARGET_PLATFORM"),
-	" (https://github.com/WilliamVenner/wav2json-rs)\",\n"
+	" (https://github.com/WilliamVenner/ffaudio2json)\",\n"
 );
 
 impl Config {
