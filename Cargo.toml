@@ -1,0 +1,20 @@
+[package]
+name = "ffaudio2json"
+version = "0.1.0"
+edition = "2021"
+authors = ["William Venner <william@venner.io"]
+license = "MIT OR Apache-2.0"
+description = "Convert audio files to JSON waveforms using FFmpeg"
+repository = "https://github.com/WilliamVenner/ffaudio2json"
+
+[workspace]
+members = ["ffaudio2json-cli"]
+default-members = ["ffaudio2json-cli"]
+
+[dependencies]
+ffmpeg-next = "7"
+thiserror = "1"
+derive_builder = "0.20"
+
+[build-dependencies]
+build-data = "0.2"
