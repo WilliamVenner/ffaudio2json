@@ -17,6 +17,7 @@ thiserror = "1"
 derive_builder = "0.20"
 strum_macros = "0.26"
 strum = "0.26"
+log = "0.4"
 
 [build-dependencies]
 build-data = "0.2"

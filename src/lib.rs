@@ -14,7 +14,7 @@ use std::{
 	ffi::OsStr,
 	fs::{File, OpenOptions},
 	io::{BufWriter, Seek, SeekFrom, Write},
-	path::Path,
+	path::{Path, PathBuf},
 	time::{Duration, Instant},
 };
 
@@ -47,7 +47,9 @@ struct GeneratorContext<'a> {
 
 impl Config {
 	/// Generate the JSON waveform
-	pub fn run(self) -> Result<(), Error> {
+	///
+	/// Returns the path to the output file
+	pub fn run(self) -> Result<PathBuf, Error> {
 		let now = Instant::now();
 
 		let input_file_size = self.input.metadata()?.len();
@@ -92,7 +94,7 @@ impl Config {
 			.expect("unable to determine stream duration") as f64
 			* f64::from(stream.time_base());
 
-		eprintln!("Audio duration: {:?}", Duration::from_secs_f64(input_duration));
+		log::debug!("Audio duration: {:?}", Duration::from_secs_f64(input_duration));
 
 		let input_samples = input_duration * decoder.rate() as f64;
 		let dst_sample_rate = input_duration / (self.samples as f64).min(input_samples);
@@ -128,13 +130,13 @@ impl Config {
 
 		output.flush()?;
 
-		eprintln!(
+		log::debug!(
 			"Codec: {} Channel(s): {} Samples: {:?}",
 			codec.description(),
 			decoder.channels(),
 			decoder.format()
 		);
-		eprintln!("Generating waveform...");
+		log::debug!("Generating waveform...");
 
 		audio::process(
 			&mut ictx,
@@ -152,16 +154,14 @@ impl Config {
 		output.flush()?;
 
 		let elapsed = now.elapsed();
-		eprintln!(
+		log::debug!(
 			"Took {:?} ({:.2} MiB/s) ({:?} of audio/s)",
 			elapsed,
 			input_file_size as f64 / elapsed.as_secs_f64() / 1024.0 / 1024.0,
 			Duration::try_from_secs_f64(input_duration / elapsed.as_secs_f64()).unwrap_or(Duration::ZERO)
 		);
 
-		println!("{}", output_path.display());
-
-		Ok(())
+		Ok(output_path.into_owned())
 	}
 
 	fn output_file_path(&self) -> Cow<'_, Path> {

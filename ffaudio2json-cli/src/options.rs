@@ -47,6 +47,9 @@ pub struct Options {
 	#[clap(value_parser, value_delimiter = ' ')]
 	pub channels: Vec<Channel>,
 
+	#[structopt(short, long, help = "Suppress all output", default_value = "false")]
+	pub quiet: bool,
+
 	pub input: PathBuf,
 }
 impl From<Options> for ffaudio2json::Config {
