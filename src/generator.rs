@@ -182,6 +182,20 @@ impl<Planar: PlanarSample> DecodingContext<'_, '_, '_, Planar> {
 			};
 		}
 
+		macro_rules! push_to_writer {
+			($sample:expr => $channel:ident) => {
+				if let Some(ref mut writer) = self.writers.$channel {
+					if let Some(sample) = self.channel_buffers.$channel.as_mut().unwrap().push($sample) {
+						unwrap_break!(writer.write(sample, self.config)?);
+					}
+				}
+			};
+
+			($channel:ident) => {
+				push_to_writer!($channel => $channel);
+			};
+		}
+
 		if self.channel_count == 1 {
 			// If there's only 1 channel, we can just dump it as-is to all the channel writers.
 			dump_to_writer!(0 => left);
@@ -191,64 +205,42 @@ impl<Planar: PlanarSample> DecodingContext<'_, '_, '_, Planar> {
 			dump_to_writer!(0 => @composite mid);
 			dump_to_writer!(0 => @composite side);
 		} else {
-			dump_to_writer!(0 => left);
-			dump_to_writer!(1 => right);
+			for sample in 0..decoded.samples() {
+				let mut min = Planar::MAX;
+				let mut max = Planar::MIN;
+				let mut sum = 0.0_f64;
 
-			macro_rules! impl_channels {
-				(
-					let $sample:ident;
-					$($channel:ident => || $transform:expr;)*
-				) => {
-					$(if let Some(ref mut channel) = self.writers.$channel {
-						unwrap_break!(self.channel_buffers.$channel.as_mut().unwrap().extend(
-							$transform,
-							|sample| channel.write(sample, self.config).map_err(Into::into),
-						)?);
-					})*
-				};
-			}
-			impl_channels! {
-				let sample;
+				for (plane, sample) in (0..decoded.planes())
+					.map(|plane| (plane, decoded.plane::<Planar>(plane)))
+					.map(|(i, plane)| (i, plane[sample]))
+				{
+					match plane {
+						0 => push_to_writer!(sample => left),
+						1 => push_to_writer!(sample => right),
+						_ => {}
+					}
 
-				mid => || {
-					(0..decoded.samples()).map(|sample| {
-						(0..decoded.planes())
-							.map(|plane| decoded.plane::<Planar>(plane))
-							.map(|plane| plane[sample])
-							.map(|sample| sample.into_f64())
-							.sum::<f64>() / decoded.planes() as f64
-					})
-				};
+					sum += sample.into_f64();
 
-				side => || {
-					decoded
-						.plane::<Planar>(0)
-						.iter()
-						.copied()
-						.zip(decoded.plane::<Planar>(1).iter().copied())
-						.map(|(left, right)| (left.into_f64(), right.into_f64()))
-						.map(|(left, right)| (left - right) / 2.0)
-				};
+					if sample < min {
+						min = sample;
+					}
 
-				min => || {
-					(0..decoded.samples()).map(|sample| {
-						(0..decoded.planes())
-							.map(|plane| decoded.plane::<Planar>(plane))
-							.map(|plane| plane[sample])
-							.reduce(|a, b| if a < b { a } else { b })
-							.unwrap()
-					})
-				};
+					if sample > max {
+						max = sample;
+					}
+				}
 
-				max => || {
-					(0..decoded.samples()).map(|sample| {
-						(0..decoded.planes())
-							.map(|plane| decoded.plane::<Planar>(plane))
-							.map(|plane| plane[sample])
-							.reduce(|a, b| if a > b { a } else { b })
-							.unwrap()
-					})
-				};
+				push_to_writer!(min);
+				push_to_writer!(max);
+
+				let mid = sum / decoded.planes() as f64;
+				push_to_writer!(mid);
+
+				let left = decoded.plane::<Planar>(0)[sample];
+				let right = decoded.plane::<Planar>(1)[sample];
+				let side = left.into_f64() - right.into_f64();
+				push_to_writer!(side);
 			}
 		}
 

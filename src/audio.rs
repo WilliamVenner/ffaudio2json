@@ -1,4 +1,7 @@
 pub trait PlanarSample: Clone + Copy + Sized + std::cmp::PartialOrd {
+	const MAX: Self;
+	const MIN: Self;
+
 	/// Normalize the sample to a range of 0.0 to 1.0
 	///
 	/// We always use `f64` as an intermediary value, this makes it easier to work with composite channels.
@@ -35,6 +38,9 @@ macro_rules! impl_planar_sample {
 		unsigned: $($unsigned:ty),*;
 	) => {
 		$(impl PlanarSample for $signed {
+			const MAX: Self = Self::MAX;
+			const MIN: Self = Self::MIN;
+
 			#[inline]
 			fn normalize(this: f64) -> f64 {
 				(this.abs() / Self::MAX as f64).min(1.0)
@@ -47,6 +53,9 @@ macro_rules! impl_planar_sample {
 		})*
 
 		$(impl PlanarSample for $signedf {
+			const MAX: Self = Self::MAX;
+			const MIN: Self = Self::MIN;
+
 			#[inline]
 			fn normalize(this: f64) -> f64 {
 				this.abs().min(1.0)
@@ -59,6 +68,9 @@ macro_rules! impl_planar_sample {
 		})*
 
 		$(impl PlanarSample for $unsigned {
+			const MAX: Self = Self::MAX;
+			const MIN: Self = Self::MIN;
+
 			#[inline]
 			fn normalize(this: f64) -> f64 {
 				(this / Self::MAX as f64).min(1.0)
