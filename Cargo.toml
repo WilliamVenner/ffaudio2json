@@ -21,7 +21,10 @@ codegen-units = 1
 strip = true
 
 [dependencies]
-ffmpeg-next = "7"
+ffmpeg-next = { version = "7", default-features = false, features = [
+	"codec",
+	"format",
+] }
 thiserror = "1"
 log = "0.4"
 strum_macros = "0.26"
