@@ -140,8 +140,8 @@ impl<'a> GeneratorContext<'a> {
 				}
 			}
 
-			if channel_count == 1 && decoder.format().is_planar() {
-				// If there's only 1 channel and this is in planar format, we need to flush the first buffer, and write it to all the channel writers.
+			if channel_count == 1 {
+				// If there's only 1 channel, we need to flush the first buffer, and write it to all the channel writers.
 
 				// Weird iterator drop glue stuff requires this weird looking code.
 				let scalar = { channel_buffers.iter_mut_scalar().next().map(|buffer| buffer.flush()) };
