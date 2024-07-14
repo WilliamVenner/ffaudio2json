@@ -343,6 +343,8 @@ dependencies = [
  "derive_builder",
  "ffmpeg-next",
  "log",
+ "serde_json",
+ "stderrlog",
  "strum",
  "strum_macros",
  "thiserror",
