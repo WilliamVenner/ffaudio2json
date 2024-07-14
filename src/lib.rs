@@ -4,6 +4,13 @@
 //!
 //! Based on [wav2json](https://github.com/beschulz/wav2json)
 //!
+//! ## Building
+//!
+//! This library/binary can be built/compiled just like any normal Rust program with `cargo build` or `cargo build --release`
+//! (for an optimized build), however, you will probably want to also read the
+//! [ffmpeg-next build instructions](https://github.com/zmwangx/rust-ffmpeg/wiki/Notes-on-building)
+//! as it is a dependency with special build requirements.
+//!
 //! ## Example Output
 //!
 //! ```json
