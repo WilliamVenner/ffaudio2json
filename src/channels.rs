@@ -50,11 +50,11 @@ impl ChannelWriter {
 	pub(crate) fn write(&mut self, mut sample: f64, config: &FfAudio2Json) -> Result<ControlFlow<()>, std::io::Error> {
 		debug_assert!(sample >= 0.0);
 
-		self.written += 1;
-
-		if self.written > config.samples as usize {
+		if self.written >= config.samples as usize {
 			return Ok(ControlFlow::Break(()));
 		}
+
+		self.written += 1;
 
 		if config.db_scale {
 			sample = util::map2range(

@@ -17,13 +17,14 @@ impl<Scalar: PlanarSample, Composite: PlanarSample> SampleBuffer<Scalar, Composi
 		}
 	}
 
-	pub fn push(&mut self, sample: Composite) -> Option<f64> {
-		if self.buffer.len() != self.buffer.capacity() {
-			self.buffer.push(sample);
-			None
-		} else {
-			self.buffer.drain(..).chain(std::iter::once(sample)).flatten_samples::<Scalar>()
+	pub fn push(&mut self, sample: Composite, mut process: impl FnMut(f64) -> Result<ControlFlow<()>, Error>) -> Result<ControlFlow<()>, Error> {
+		if self.buffer.len() == self.buffer.capacity() {
+			unwrap_break!(process(self.buffer.drain(..).flatten_samples::<Scalar>().unwrap())?);
 		}
+
+		self.buffer.push(sample);
+
+		Ok(ControlFlow::Continue(()))
 	}
 
 	pub fn extend(
@@ -63,4 +64,49 @@ impl<Scalar: PlanarSample, Composite: PlanarSample> Clone for SampleBuffer<Scala
 			_phantom: PhantomData,
 		}
 	}
+}
+
+#[test]
+fn test_sample_buffer_push() {
+	let mut buffer = SampleBuffer::<f64>::with_capacity(10);
+	for _ in 0..2 {
+		for _ in 0..10 {
+			buffer.push(0.5, |_sample| unreachable!()).unwrap();
+		}
+
+		buffer
+			.push(0.6, |sample| {
+				assert_eq!(sample, 0.5);
+				Ok(ControlFlow::Continue(()))
+			})
+			.unwrap();
+
+		assert_eq!(buffer.flush().unwrap(), 0.6);
+	}
+}
+
+#[test]
+fn test_sample_buffer_extend() {
+	let mut buffer = SampleBuffer::<f64>::with_capacity(10);
+	for _ in 0..2 {
+		buffer.extend((0..10).into_iter().map(|_| 0.5), |_sample| unreachable!()).unwrap();
+
+		buffer
+			.extend(std::iter::once(0.6), |sample| {
+				assert_eq!(sample, 0.5);
+				Ok(ControlFlow::Continue(()))
+			})
+			.unwrap();
+
+		assert_eq!(buffer.flush().unwrap(), 0.6);
+	}
+}
+
+#[test]
+fn test_sample_buffer_flush() {
+	let mut buffer = SampleBuffer::<f64>::with_capacity(10);
+	assert!(buffer.flush().is_none());
+	buffer.push(0.5, |_sample| unreachable!()).unwrap();
+	assert_eq!(buffer.flush(), Some(0.5));
+	assert!(buffer.flush().is_none());
 }

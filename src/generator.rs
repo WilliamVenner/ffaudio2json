@@ -180,9 +180,12 @@ impl<Planar: PlanarSample> DecodingContext<'_, '_, '_, Planar> {
 		macro_rules! push_to_writer {
 			($sample:expr => $channel:ident) => {
 				if let Some(ref mut writer) = self.writers.$channel {
-					if let Some(sample) = self.channel_buffers.$channel.as_mut().unwrap().push($sample) {
-						unwrap_break!(writer.write(sample, self.config)?);
-					}
+					unwrap_break!(
+						self.channel_buffers.$channel.as_mut().unwrap().push(
+							$sample,
+							|sample| writer.write(sample, self.config).map_err(Into::into)
+						)?
+					);
 				}
 			};
 
@@ -271,23 +274,27 @@ impl<Planar: PlanarSample> DecodingContext<'_, '_, '_, Planar> {
 				macro_rules! push_to_writer {
 					($idx:literal => @composite $writer:ident) => {
 						if let Some(ref mut writer) = self.writers.$writer {
-							if let Some(sample) = self
+							unwrap_break!(self
 								.channel_buffers
 								.$writer
 								.as_mut()
 								.unwrap()
-								.push(sample.index($idx).into_f64())
-							{
-								writer.write(sample, self.config)?;
-							}
+								.push(sample.index($idx).into_f64(), |sample| writer
+									.write(sample, self.config)
+									.map_err(Into::into))?);
 						}
 					};
 
 					($idx:literal => $writer:ident) => {
 						if let Some(ref mut writer) = self.writers.$writer {
-							if let Some(sample) = self.channel_buffers.$writer.as_mut().unwrap().push(sample.index($idx)) {
-								writer.write(sample, self.config)?;
-							}
+							unwrap_break!(self
+								.channel_buffers
+								.$writer
+								.as_mut()
+								.unwrap()
+								.push(sample.index($idx), |sample| {
+									writer.write(sample, self.config).map_err(Into::into)
+								})?);
 						}
 					};
 				}
@@ -308,9 +315,12 @@ impl<Planar: PlanarSample> DecodingContext<'_, '_, '_, Planar> {
 				) => {
 					for $sample in plane {
 						$(if let Some(ref mut channel) = self.writers.$channel {
-							if let Some(sample) = self.channel_buffers.$channel.as_mut().unwrap().push($transform) {
-								unwrap_break!(channel.write(sample, self.config)?);
-							}
+							unwrap_break!(
+								self.channel_buffers.$channel.as_mut().unwrap().push(
+									$transform,
+									|sample| channel.write(sample, self.config).map_err(Into::into)
+								)?
+							);
 						})*
 					}
 				};
