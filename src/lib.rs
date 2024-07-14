@@ -91,14 +91,6 @@ impl FfAudio2Json {
 
 		let mut ictx = ffmpeg::format::input(&self.input)?;
 
-		let pts = (|| {
-			// Seek to the last frame
-			ictx.seek(i64::MAX, 0..i64::MAX)?;
-			let pts = ictx.packets().last().and_then(|(_, packet)| packet.pts());
-			ictx.seek(0, 0..i64::MAX)?;
-			Ok::<_, Error>(pts)
-		})();
-
 		let stream = ictx.streams().best(ffmpeg::media::Type::Audio).ok_or(ffmpeg::Error::StreamNotFound)?;
 		let stream_idx = stream.index();
 
@@ -113,7 +105,17 @@ impl FfAudio2Json {
 
 		let input_duration = Some(stream.duration())
 			.filter(|duration| *duration != i64::MIN)
-			.or_else(|| pts.expect("failed to seek to last frame in order to determine stream duration"))
+			.or_else(|| {
+				(|| {
+					let mut ictx = ffmpeg::format::input(&self.input)?;
+					// Seek to the last frame
+					ictx.seek(i64::MAX, 0..i64::MAX)?;
+					let pts = ictx.packets().last().and_then(|(_, packet)| packet.pts());
+					ictx.seek(0, 0..i64::MAX)?;
+					Ok::<_, Error>(pts)
+				})()
+				.expect("failed to seek to last frame in order to determine stream duration")
+			})
 			.expect("unable to determine stream duration") as f64
 			* f64::from(stream.time_base());
 

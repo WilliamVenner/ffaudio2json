@@ -162,6 +162,9 @@ impl<'a> GeneratorContext<'a> {
 			}
 		}
 
+		debug_assert!(channel_buffers.iter_mut_scalar().all(|buffer| buffer.flush().is_none()));
+		debug_assert!(channel_buffers.iter_mut_composite().all(|buffer| buffer.flush().is_none()));
+
 		Ok(())
 	}
 }

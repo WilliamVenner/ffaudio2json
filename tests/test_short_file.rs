@@ -249,7 +249,7 @@ fn test_short_stereo_mp3_file_full() {
 		.no_header(true)
 		.input(path!("airboat_gun_lastshot1_1khz_stereo.mp3"))
 		.output(Some(path!("airboat_gun_lastshot1_1khz_stereo_full.mp3.json")))
-		.samples(22932)
+		.samples(24192)
 		.channels(vec![Channel::Left, Channel::Right])
 		.build()
 		.unwrap()
@@ -259,8 +259,8 @@ fn test_short_stereo_mp3_file_full() {
 	let json = open_json!("airboat_gun_lastshot1_1khz_stereo_full.mp3.json");
 	let json = json.as_object().unwrap();
 
-	assert_eq!(json.get("left").unwrap().as_array().unwrap().len(), 22932);
-	assert_eq!(json.get("right").unwrap().as_array().unwrap().len(), 22932);
+	assert_eq!(json.get("left").unwrap().as_array().unwrap().len(), 24192);
+	assert_eq!(json.get("right").unwrap().as_array().unwrap().len(), 24192);
 }
 
 #[test]
@@ -281,8 +281,8 @@ fn test_short_stereo_mp3_file_extended() {
 	let json = open_json!("airboat_gun_lastshot1_1khz_stereo_extended.mp3.json");
 	let json = json.as_object().unwrap();
 
-	assert_eq!(json.get("left").unwrap().as_array().unwrap().len(), 22932);
-	assert_eq!(json.get("right").unwrap().as_array().unwrap().len(), 22932);
+	assert_eq!(json.get("left").unwrap().as_array().unwrap().len(), 24192);
+	assert_eq!(json.get("right").unwrap().as_array().unwrap().len(), 24192);
 
 	let spaces = std::fs::read_to_string(path!("airboat_gun_lastshot1_1khz_stereo_extended.mp3.json"))
 		.unwrap()
