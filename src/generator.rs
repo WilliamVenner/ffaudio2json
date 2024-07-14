@@ -140,7 +140,26 @@ impl<'a> GeneratorContext<'a> {
 				}
 			}
 
-			flush_channel_buffers!(self, channel_buffers, [left, right, mid, side, min, max]);
+			if channel_count == 1 && decoder.format().is_planar() {
+				// If there's only 1 channel and this is in planar format, we need to flush the first buffer, and write it to all the channel writers.
+
+				// Weird iterator drop glue stuff requires this weird looking code.
+				let scalar = { channel_buffers.iter_mut_scalar().next().map(|buffer| buffer.flush()) };
+
+				let composite = if scalar.is_none() {
+					channel_buffers.iter_mut_composite().next().map(|buffer| buffer.flush())
+				} else {
+					None
+				};
+
+				if let Some(sample) = scalar.or(composite).flatten() {
+					for writer in self.writers.iter_mut() {
+						writer.write(sample, self.config)?;
+					}
+				}
+			} else {
+				flush_channel_buffers!(self, channel_buffers, [left, right, mid, side, min, max]);
+			}
 		}
 
 		Ok(())
@@ -158,30 +177,6 @@ impl<Planar: PlanarSample> DecodingContext<'_, '_, '_, Planar> {
 	where
 		Planar: ffmpeg::frame::audio::Sample,
 	{
-		macro_rules! dump_to_writer {
-			($idx:literal => @composite $writer:ident) => {
-				if let Some(ref mut writer) = self.writers.$writer {
-					unwrap_break!(self.channel_buffers.$writer.as_mut().unwrap().extend(
-						decoded.plane::<Planar>($idx).iter().copied().map(|sample| sample.into_f64()),
-						|sample| { writer.write(sample, self.config).map_err(Into::into) },
-					)?);
-				}
-			};
-
-			($idx:literal => $writer:ident) => {
-				if let Some(ref mut writer) = self.writers.$writer {
-					unwrap_break!(self
-						.channel_buffers
-						.$writer
-						.as_mut()
-						.unwrap()
-						.extend(decoded.plane::<Planar>($idx).iter().copied(), |sample| writer
-							.write(sample, self.config)
-							.map_err(Into::into),)?);
-				}
-			};
-		}
-
 		macro_rules! push_to_writer {
 			($sample:expr => $channel:ident) => {
 				if let Some(ref mut writer) = self.writers.$channel {
@@ -198,12 +193,29 @@ impl<Planar: PlanarSample> DecodingContext<'_, '_, '_, Planar> {
 
 		if self.channel_count == 1 {
 			// If there's only 1 channel, we can just dump it as-is to all the channel writers.
-			dump_to_writer!(0 => left);
-			dump_to_writer!(0 => right);
-			dump_to_writer!(0 => min);
-			dump_to_writer!(0 => max);
-			dump_to_writer!(0 => @composite mid);
-			dump_to_writer!(0 => @composite side);
+
+			macro_rules! dump_to_writer {
+				($buffer:ident => $extend:expr) => {
+					return $buffer.extend($extend, |sample| {
+						for writer in self.writers.iter_mut() {
+							if writer.write(sample, self.config)?.is_break() {
+								return Ok(ControlFlow::Break(()));
+							}
+						}
+						Ok(ControlFlow::Continue(()))
+					});
+				};
+			}
+
+			if let Some(buffer) = self.channel_buffers.iter_mut_scalar().next() {
+				dump_to_writer!(buffer => decoded.plane::<Planar>(0).iter().copied());
+			}
+
+			if let Some(buffer) = self.channel_buffers.iter_mut_composite().next() {
+				dump_to_writer!(buffer => decoded.plane::<Planar>(0).iter().copied().map(|sample| sample.into_f64()));
+			}
+
+		// BTW, we also need to do this after flushing the first buffer, as it's the only buffer we pushed to.
 		} else {
 			for sample in 0..decoded.samples() {
 				let mut min = Planar::MAX;

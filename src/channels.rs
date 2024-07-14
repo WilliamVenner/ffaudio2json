@@ -88,6 +88,31 @@ impl<Scalar, Composite> Default for Channels<Scalar, Composite> {
 		}
 	}
 }
+impl<Scalar, Composite> Channels<Scalar, Composite> {
+	pub fn iter_mut_scalar(&mut self) -> impl Iterator<Item = &mut Scalar> {
+		[self.left.as_mut(), self.right.as_mut(), self.min.as_mut(), self.max.as_mut()]
+			.into_iter()
+			.flatten()
+	}
+
+	pub fn iter_mut_composite(&mut self) -> impl Iterator<Item = &mut Composite> {
+		[self.mid.as_mut(), self.side.as_mut()].into_iter().flatten()
+	}
+}
+impl<Scalar> Channels<Scalar, Scalar> {
+	pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Scalar> {
+		[
+			self.left.as_mut(),
+			self.right.as_mut(),
+			self.mid.as_mut(),
+			self.side.as_mut(),
+			self.min.as_mut(),
+			self.max.as_mut(),
+		]
+		.into_iter()
+		.flatten()
+	}
+}
 impl Channels<ChannelWriter> {
 	pub(crate) fn make_buffers<Scalar: PlanarSample>(&self, capacity: usize) -> Channels<SampleBuffer<Scalar>, SampleBuffer<Scalar, f64>> {
 		Channels {
