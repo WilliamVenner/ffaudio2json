@@ -262,55 +262,85 @@ impl<Planar: PlanarSample> DecodingContext<'_, '_, '_, Planar> {
 
 		debug_assert_eq!(plane.len() % self.channel_count, 0);
 
-		// TODO channel_count 1 optimisation
-
-		macro_rules! impl_channels {
-			(
-				let $sample:ident;
-				$($channel:ident => || $transform:expr;)*
-			) => {
-				for $sample in plane {
-					$(if let Some(ref mut channel) = self.writers.$channel {
-						if let Some(sample) = self.channel_buffers.$channel.as_mut().unwrap().push($transform) {
-							unwrap_break!(channel.write(sample, self.config)?);
+		if self.channel_count == 1 {
+			for sample in plane {
+				macro_rules! push_to_writer {
+					($idx:literal => @composite $writer:ident) => {
+						if let Some(ref mut writer) = self.writers.$writer {
+							if let Some(sample) = self
+								.channel_buffers
+								.$writer
+								.as_mut()
+								.unwrap()
+								.push(sample.index($idx).into_f64())
+							{
+								writer.write(sample, self.config)?;
+							}
 						}
-					})*
+					};
+
+					($idx:literal => $writer:ident) => {
+						if let Some(ref mut writer) = self.writers.$writer {
+							if let Some(sample) = self.channel_buffers.$writer.as_mut().unwrap().push(sample.index($idx)) {
+								writer.write(sample, self.config)?;
+							}
+						}
+					};
 				}
-			};
+
+				// If there's only 1 channel, we can just dump it as-is to all the channel writers.
+				push_to_writer!(0 => left);
+				push_to_writer!(0 => right);
+				push_to_writer!(0 => min);
+				push_to_writer!(0 => max);
+				push_to_writer!(0 => @composite mid);
+				push_to_writer!(0 => @composite side);
+			}
+		} else {
+			macro_rules! impl_channels {
+				(
+					let $sample:ident;
+					$($channel:ident => || $transform:expr;)*
+				) => {
+					for $sample in plane {
+						$(if let Some(ref mut channel) = self.writers.$channel {
+							if let Some(sample) = self.channel_buffers.$channel.as_mut().unwrap().push($transform) {
+								unwrap_break!(channel.write(sample, self.config)?);
+							}
+						})*
+					}
+				};
+			}
+			impl_channels!(
+				let sample;
+
+				left => || sample.index(0);
+
+				right => || sample.index(1);
+
+				mid => || (0..self.channel_count).map(|channel| sample.index(channel).into_f64()).sum::<f64>() / self.channel_count as f64;
+
+				side => || {
+					let left = sample.index(0).into_f64();
+					let right = sample.index(1).into_f64();
+					(left - right) / 2.0
+				};
+
+				min => || {
+					(0..self.channel_count)
+					.map(|channel| sample.index(channel))
+					.reduce(|a, b| if a < b { a } else { b })
+					.unwrap()
+				};
+
+				max => || {
+					(0..self.channel_count)
+					.map(|channel| sample.index(channel))
+					.reduce(|a, b| if a > b { a } else { b })
+					.unwrap()
+				};
+			);
 		}
-		impl_channels!(
-			let sample;
-
-			left => || sample.index(0);
-
-			right => || sample.index(1);
-
-			mid => || if self.channel_count != 1 { // TODO remove
-				(0..self.channel_count).map(|channel| sample.index(channel).into_f64()).sum::<f64>() / self.channel_count as f64
-			} else {
-				sample.index(0).into_f64()
-			};
-
-			side => || {
-				let left = sample.index(0).into_f64();
-				let right = sample.index(1).into_f64();
-				(left - right) / 2.0
-			};
-
-			min => || {
-				(0..self.channel_count)
-				.map(|channel| sample.index(channel))
-				.reduce(|a, b| if a < b { a } else { b })
-				.unwrap()
-			};
-
-			max => || {
-				(0..self.channel_count)
-				.map(|channel| sample.index(channel))
-				.reduce(|a, b| if a > b { a } else { b })
-				.unwrap()
-			};
-		);
 
 		Ok::<_, Error>(ControlFlow::Continue(()))
 	}
