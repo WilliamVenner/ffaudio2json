@@ -18,15 +18,23 @@ pub enum Channel {
 	Right,
 
 	/// The mid channel
+	///
+	/// This channel represents the average of all channels in the audio stream
 	Mid,
 
 	/// The side channel
+	///
+	/// This channel represents the difference between the left and right channels
 	Side,
 
 	/// The min channel
+	///
+	/// This channel represents the minimum value of all channels in the audio stream
 	Min,
 
 	/// The max channel
+	///
+	/// This channel represents the maximum value of all channels in the audio stream
 	Max,
 }
 
