@@ -1,7 +1,4 @@
-use crate::{
-	audio::{AudioBuffer, PlanarAudioSample},
-	util, Config,
-};
+use crate::{audio::PlanarSample, buffer::SampleBuffer, util, FfAudio2Json};
 use std::{
 	fs::File,
 	io::{BufWriter, Write},
@@ -12,7 +9,7 @@ use std::{
 	Debug, Clone, Copy, strum_macros::EnumString, strum_macros::Display, strum_macros::EnumCount, strum_macros::EnumIter, strum_macros::VariantArray,
 )]
 #[strum(serialize_all = "lowercase")]
-/// The channels to compute
+/// Channels that FFAudio2JSON can output
 pub enum Channel {
 	/// The left channel
 	Left,
@@ -42,7 +39,7 @@ impl ChannelWriter {
 		Self { inner: writer, written: 0 }
 	}
 
-	pub(crate) fn write(&mut self, mut sample: f64, config: &Config) -> Result<ControlFlow<()>, std::io::Error> {
+	pub(crate) fn write(&mut self, mut sample: f64, config: &FfAudio2Json) -> Result<ControlFlow<()>, std::io::Error> {
 		debug_assert!(sample >= 0.0);
 
 		self.written += 1;
@@ -92,14 +89,14 @@ impl<Scalar, Composite> Default for Channels<Scalar, Composite> {
 	}
 }
 impl Channels<ChannelWriter> {
-	pub(crate) fn make_buffers<Scalar: PlanarAudioSample>(&self, capacity: usize) -> Channels<AudioBuffer<Scalar>, AudioBuffer<Scalar, f64>> {
+	pub(crate) fn make_buffers<Scalar: PlanarSample>(&self, capacity: usize) -> Channels<SampleBuffer<Scalar>, SampleBuffer<Scalar, f64>> {
 		Channels {
-			left: self.left.as_ref().map(|_| AudioBuffer::with_capacity(capacity)),
-			right: self.right.as_ref().map(|_| AudioBuffer::with_capacity(capacity)),
-			mid: self.mid.as_ref().map(|_| AudioBuffer::with_capacity(capacity)),
-			side: self.side.as_ref().map(|_| AudioBuffer::with_capacity(capacity)),
-			min: self.min.as_ref().map(|_| AudioBuffer::with_capacity(capacity)),
-			max: self.max.as_ref().map(|_| AudioBuffer::with_capacity(capacity)),
+			left: self.left.as_ref().map(|_| SampleBuffer::with_capacity(capacity)),
+			right: self.right.as_ref().map(|_| SampleBuffer::with_capacity(capacity)),
+			mid: self.mid.as_ref().map(|_| SampleBuffer::with_capacity(capacity)),
+			side: self.side.as_ref().map(|_| SampleBuffer::with_capacity(capacity)),
+			min: self.min.as_ref().map(|_| SampleBuffer::with_capacity(capacity)),
+			max: self.max.as_ref().map(|_| SampleBuffer::with_capacity(capacity)),
 		}
 	}
 }

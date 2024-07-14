@@ -11,17 +11,22 @@ repository = "https://github.com/WilliamVenner/ffaudio2json"
 members = ["ffaudio2json-cli"]
 default-members = ["ffaudio2json-cli"]
 
-[dependencies]
-ffmpeg-next = "7"
-thiserror = "1"
-derive_builder = "0.20"
-strum_macros = "0.26"
-strum = "0.26"
-log = "0.4"
-
-[build-dependencies]
-build-data = "0.2"
-
 [patch.crates-io.ffmpeg-next]
 git = "https://github.com/WilliamVenner/rust-ffmpeg.git"
 branch = "feat/8-channel-sample-impl"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+
+[dependencies]
+ffmpeg-next = "7"
+thiserror = "1"
+log = "0.4"
+strum_macros = "0.26"
+strum = "0.26"
+derive_builder = "0.20"
+
+[build-dependencies]
+build-data = "0.2"

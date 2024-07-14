@@ -52,18 +52,20 @@ pub struct Options {
 
 	pub input: PathBuf,
 }
-impl From<Options> for ffaudio2json::Config {
-	fn from(val: Options) -> Self {
-		ffaudio2json::Config {
-			samples: val.samples,
-			db_min: val.db_min,
-			db_max: val.db_max,
-			db_scale: val.db_scale,
-			precision: val.precision,
-			no_header: val.no_header,
-			output: val.output,
-			input: val.input,
-			channels: val.channels.into_iter().map(Into::into).collect(),
-		}
+impl TryFrom<Options> for ffaudio2json::FfAudio2Json {
+	type Error = ffaudio2json::FfAudio2JsonBuilderError;
+
+	fn try_from(val: Options) -> Result<Self, Self::Error> {
+		ffaudio2json::FfAudio2JsonBuilder::default()
+			.samples(val.samples)
+			.db_min(val.db_min)
+			.db_max(val.db_max)
+			.db_scale(val.db_scale)
+			.precision(val.precision)
+			.no_header(val.no_header)
+			.output(val.output)
+			.input(val.input)
+			.channels(val.channels)
+			.build()
 	}
 }

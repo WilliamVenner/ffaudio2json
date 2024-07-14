@@ -14,7 +14,7 @@ fn main() -> Result<(), ffaudio2json::Error> {
 		.init()
 		.ok();
 
-	let output_path = ffaudio2json::Config::from(opt).run()?;
+	let output_path = ffaudio2json::FfAudio2Json::try_from(opt).unwrap().run()?;
 
 	println!("{}", output_path.display());
 
