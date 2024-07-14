@@ -11,6 +11,7 @@ pub struct SampleBuffer<Scalar: PlanarSample, Composite: PlanarSample = Scalar> 
 }
 impl<Scalar: PlanarSample, Composite: PlanarSample> SampleBuffer<Scalar, Composite> {
 	pub fn with_capacity(capacity: usize) -> Self {
+		debug_assert!(capacity > 0);
 		Self {
 			buffer: Vec::with_capacity(capacity),
 			_phantom: PhantomData,
@@ -50,7 +51,9 @@ impl<Scalar: PlanarSample, Composite: PlanarSample> SampleBuffer<Scalar, Composi
 	}
 
 	pub fn flush(&mut self) -> Option<f64> {
-		self.buffer.drain(..).flatten_samples::<Scalar>()
+		let res = self.buffer.drain(..).flatten_samples::<Scalar>();
+		debug_assert!(self.buffer.drain(..).flatten_samples::<Scalar>().is_none());
+		res
 	}
 }
 impl<Scalar: PlanarSample, Composite: PlanarSample> Clone for SampleBuffer<Scalar, Composite> {
@@ -83,6 +86,7 @@ fn test_sample_buffer_push() {
 
 		assert_eq!(buffer.flush().unwrap(), 0.6);
 	}
+	assert_eq!(buffer.buffer.capacity(), 10);
 }
 
 #[test]
@@ -100,6 +104,7 @@ fn test_sample_buffer_extend() {
 
 		assert_eq!(buffer.flush().unwrap(), 0.6);
 	}
+	assert_eq!(buffer.buffer.capacity(), 10);
 }
 
 #[test]
@@ -109,4 +114,5 @@ fn test_sample_buffer_flush() {
 	buffer.push(0.5, |_sample| unreachable!()).unwrap();
 	assert_eq!(buffer.flush(), Some(0.5));
 	assert!(buffer.flush().is_none());
+	assert_eq!(buffer.buffer.capacity(), 10);
 }

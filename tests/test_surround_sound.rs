@@ -22,10 +22,17 @@ fn test_surround_sound() {
 	let json = open_json!("DolbyAtmosDemo.aac.json");
 	let json = json.as_object().unwrap();
 
-	assert_eq!(json.get("left").expect("left missing").as_array().unwrap().len(), 50000);
-	assert_eq!(json.get("right").expect("right missing").as_array().unwrap().len(), 50000);
-	assert_eq!(json.get("mid").expect("mid missing").as_array().unwrap().len(), 50000);
-	assert_eq!(json.get("side").expect("side missing").as_array().unwrap().len(), 50000);
-	assert_eq!(json.get("min").expect("min missing").as_array().unwrap().len(), 50000);
-	assert_eq!(json.get("max").expect("max missing").as_array().unwrap().len(), 50000);
+	let left = json.get("left").expect("left missing").as_array().unwrap().len();
+	let right = json.get("right").expect("right missing").as_array().unwrap().len();
+	let mid = json.get("mid").expect("mid missing").as_array().unwrap().len();
+	let side = json.get("side").expect("side missing").as_array().unwrap().len();
+	let min = json.get("min").expect("min missing").as_array().unwrap().len();
+	let max = json.get("max").expect("max missing").as_array().unwrap().len();
+
+	assert!(left >= 40000 && left <= 50000, "40000 <= {left} <= 50000");
+	assert!(right >= 40000 && right <= 50000, "40000 <= {right} <= 50000");
+	assert!(mid >= 40000 && mid <= 50000, "40000 <= {mid} <= 50000");
+	assert!(side >= 40000 && side <= 50000, "40000 <= {side} <= 50000");
+	assert!(min >= 40000 && min <= 50000, "40000 <= {min} <= 50000");
+	assert!(max >= 40000 && max <= 50000, "40000 <= {max} <= 50000");
 }

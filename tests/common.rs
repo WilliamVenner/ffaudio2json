@@ -13,6 +13,13 @@ macro_rules! open_json {
 }
 
 #[macro_export]
+macro_rules! assert_json_spaces {
+	($path:literal, $spaces:literal) => {{
+		assert_eq!(::std::fs::read_to_string(path!($path)).unwrap().matches(' ').count(), $spaces)
+	}};
+}
+
+#[macro_export]
 macro_rules! enable_logging {
 	() => {
 		::stderrlog::new()

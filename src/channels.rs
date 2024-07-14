@@ -40,7 +40,7 @@ pub enum Channel {
 
 pub(crate) struct ChannelWriter {
 	inner: BufWriter<File>,
-	written: usize,
+	pub(crate) written: usize,
 }
 impl ChannelWriter {
 	pub(crate) fn new(writer: BufWriter<File>) -> Self {

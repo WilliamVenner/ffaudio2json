@@ -11,16 +11,11 @@ type ChannelBuffers<Planar> = Channels<SampleBuffer<Planar>, SampleBuffer<Planar
 
 macro_rules! flush_channel_buffers {
 	($ctx:ident, $channel_buffers:ident, [$($channel:ident),*]) => {
-		'overrun: {
-			$(if let Some(ref mut channel) = $channel_buffers.$channel {
-				if let Some(sample) = channel.flush() {
-					let cflow = $ctx.writers.$channel.as_mut().unwrap().write(sample, $ctx.config)?;
-					if cflow.is_break() {
-						break 'overrun;
-					}
-				}
-			})*
-		}
+		$(if let Some(ref mut channel) = $channel_buffers.$channel {
+			if let Some(sample) = channel.flush() {
+				$ctx.writers.$channel.as_mut().unwrap().write(sample, $ctx.config)?;
+			}
+		})*
 	};
 }
 
@@ -107,17 +102,30 @@ impl<'a> GeneratorContext<'a> {
 		let channel_count = decoder.channels() as usize;
 		let mut channel_buffers = self.writers.make_buffers::<Planar>(self.buffer_capacity);
 		let stream_idx = self.stream_idx;
-		let mut frame_decoder = |frame: &ffmpeg::frame::Audio| {
-			frame_decoder(
-				DecodingContext {
-					config: self.config,
-					writers: &mut self.writers,
-					channel_buffers: &mut channel_buffers,
-					channel_count,
-				},
-				frame,
-			)
-		};
+
+		macro_rules! frame_decoder {
+			($frame:expr) => {
+				frame_decoder(
+					DecodingContext {
+						config: self.config,
+						writers: &mut self.writers,
+						channel_buffers: &mut channel_buffers,
+						channel_count,
+					},
+					$frame,
+				)
+			};
+		}
+
+		macro_rules! assert_uniform_written {
+			() => {
+				// Assert all the writers have written the same amount of samples.
+				if cfg!(debug_assertions) {
+					let written = self.writers.iter_mut().next().unwrap().written;
+					self.writers.iter_mut().for_each(|writer| assert_eq!(writer.written, written));
+				}
+			};
+		}
 
 		'overrun: {
 			for (_, packet) in ictx.packets().filter(|(this, _)| this.index() == stream_idx) {
@@ -125,20 +133,22 @@ impl<'a> GeneratorContext<'a> {
 
 				let mut decoded = ffmpeg::frame::Audio::empty();
 				while decoder.receive_frame(&mut decoded).is_ok() {
-					if frame_decoder(&decoded)?.is_break() {
+					if frame_decoder!(&decoded)?.is_break() {
 						break 'overrun;
 					}
 				}
+				assert_uniform_written!();
 			}
 
 			decoder.send_eof()?;
 
 			let mut decoded = ffmpeg::frame::Audio::empty();
 			while decoder.receive_frame(&mut decoded).is_ok() {
-				if frame_decoder(&decoded)?.is_break() {
+				if frame_decoder!(&decoded)?.is_break() {
 					break 'overrun;
 				}
 			}
+			assert_uniform_written!();
 
 			if channel_count == 1 {
 				// If there's only 1 channel, we need to flush the first buffer, and write it to all the channel writers.
@@ -162,8 +172,14 @@ impl<'a> GeneratorContext<'a> {
 			}
 		}
 
-		debug_assert!(channel_buffers.iter_mut_scalar().all(|buffer| buffer.flush().is_none()));
-		debug_assert!(channel_buffers.iter_mut_composite().all(|buffer| buffer.flush().is_none()));
+		debug_assert!(
+			channel_buffers.iter_mut_scalar().all(|buffer| buffer.flush().is_none()),
+			"Scalar buffers not flushed (channel_count={channel_count})"
+		);
+		debug_assert!(
+			channel_buffers.iter_mut_composite().all(|buffer| buffer.flush().is_none()),
+			"Composite buffers not flushed (channel_count={channel_count})"
+		);
 
 		Ok(())
 	}
