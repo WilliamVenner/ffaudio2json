@@ -117,20 +117,22 @@ impl FfAudio2Json {
 			.expect("unable to determine stream duration") as f64
 			* f64::from(stream.time_base());
 
+		let input_samples = input_duration * decoder.rate() as f64;
 		let resample_rate = {
-			let input_samples = input_duration * decoder.rate() as f64;
 			let dst_sample_rate = input_duration / (self.samples as f64).min(input_samples);
 			(dst_sample_rate * decoder.rate() as f64) as usize
 		};
 
-		let writers = self.writers(&mut output, &output_path)?;
+		let writers = self.writers(&mut output, &output_path, input_samples.ceil() as usize)?;
 
 		log::debug!(
-			"Audio duration: {:?}\nCodec: {} Channel(s): {} Samples: {:?}\nGenerating waveform...",
+			"Audio duration: {:?} ({} samples)\nCodec: {} Channel(s): {} Format: {:?} Sample Rate: {} Hz\nGenerating waveform...",
 			Duration::from_secs_f64(input_duration),
+			input_samples,
 			codec.description(),
 			decoder.channels(),
-			decoder.format()
+			decoder.format(),
+			decoder.rate()
 		);
 
 		output.flush()?;
@@ -160,10 +162,10 @@ impl FfAudio2Json {
 		Ok(output_path.into_owned())
 	}
 
-	fn writers(&self, output: &mut (impl Write + Seek), output_path: &Path) -> Result<Channels<ChannelWriter>, Error> {
+	fn writers(&self, output: &mut (impl Write + Seek), output_path: &Path, input_samples: usize) -> Result<Channels<ChannelWriter>, Error> {
 		let mut writers = Channels::<ChannelWriter>::default();
 
-		let samples_width = (self.samples as usize * (self.precision + 3)) - 1;
+		let samples_width = ((self.samples as usize).min(input_samples) * (self.precision + 3)) - 1;
 
 		self.channels.iter().copied().try_for_each(|channel| {
 			write!(output, "\n  \"{channel}\":[")?;
