@@ -12,6 +12,7 @@ macro_rules! open_json {
 	};
 }
 
+#[macro_export]
 macro_rules! enable_logging {
 	() => {
 		::stderrlog::new()

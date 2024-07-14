@@ -1,5 +1,4 @@
 use ffaudio2json::Channel;
-use std::{fs::File, io::BufReader};
 use strum::VariantArray;
 
 #[macro_use]

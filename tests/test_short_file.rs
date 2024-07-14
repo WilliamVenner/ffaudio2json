@@ -1,5 +1,4 @@
 use ffaudio2json::Channel;
-use std::{fs::File, io::BufReader, path::PathBuf};
 
 #[macro_use]
 mod common;
@@ -40,9 +39,7 @@ fn test_short_file_full() {
 		.run()
 		.unwrap();
 
-	let json: serde_json::Value =
-		serde_json::from_reader(BufReader::new(File::open(path!("airboat_gun_lastshot1_1khz_full.wav.json")).unwrap())).unwrap();
-
+	let json = open_json!("airboat_gun_lastshot1_1khz_full.wav.json");
 	let json = json.as_object().unwrap();
 
 	assert_eq!(json.get("mid").unwrap().as_array().unwrap().len(), 22932);
@@ -63,9 +60,7 @@ fn test_short_file_extended() {
 		.run()
 		.unwrap();
 
-	let json: serde_json::Value =
-		serde_json::from_reader(BufReader::new(File::open(path!("airboat_gun_lastshot1_1khz_extended.wav.json")).unwrap())).unwrap();
-
+	let json = open_json!("airboat_gun_lastshot1_1khz_extended.wav.json");
 	let json = json.as_object().unwrap();
 
 	assert_eq!(json.get("mid").unwrap().as_array().unwrap().len(), 22932);
