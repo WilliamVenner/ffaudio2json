@@ -1,0 +1,210 @@
+name: cd
+
+on:
+  push:
+    tags:
+      - "*"
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_TERM_VERBOSE: true
+  VERBOSE: 1
+  RUST_BACKTRACE: 1
+
+jobs:
+  build_windows:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: static
+            exe: ffaudio2json_win_x86-64.exe
+            features: "--features build-ffmpeg"
+            target: x86_64-pc-windows-gnu
+          - os: windows-latest
+            name: shared
+            exe: ffaudio2json_win_x86-64_shared.exe
+            features: "--no-default-features"
+            target: x86_64-pc-windows-msvc
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          target: ${{ matrix.target }}
+
+      - name: Setup cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install dependencies (static)
+        if: matrix.name == 'static'
+        run: |
+          sudo apt update
+          sudo apt install -y yasm gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64
+
+      - name: Install ffmpeg (shared)
+        if: matrix.name == 'shared'
+        env:
+          FFMPEG_DOWNLOAD_URL: https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full-shared.7z
+        shell: powershell
+        run: |
+          $VCINSTALLDIR = $(& "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath)
+          Add-Content $env:GITHUB_ENV "LIBCLANG_PATH=${VCINSTALLDIR}\VC\Tools\LLVM\x64\bin`n"
+          Invoke-WebRequest "${env:FFMPEG_DOWNLOAD_URL}" -OutFile ffmpeg-release-full-shared.7z
+          7z x ffmpeg-release-full-shared.7z
+          mkdir ffmpeg
+          mv ffmpeg-*/* ffmpeg/
+          Add-Content $env:GITHUB_ENV "FFMPEG_DIR=${pwd}\ffmpeg`n"
+          Add-Content $env:GITHUB_PATH "${pwd}\ffmpeg\bin`n"
+
+      - name: Build
+        run: |
+          cargo build --release --package ffaudio2json-cli ${{ matrix.features }} --target ${{ matrix.target }}
+          mv target/${{ matrix.target }}/release/ffaudio2json.exe target/${{ matrix.target }}/release/${{ matrix.exe }}
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: target/${{ matrix.target }}/release/${{ matrix.exe }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+  build_linux:
+    strategy:
+      matrix:
+        include:
+          - name: static
+            features: "--features build-ffmpeg"
+            exe: ffaudio2json_linux_x86-64_static
+            target: x86_64-unknown-linux-gnu
+
+          - name: shared
+            features: "--no-default-features"
+            exe: ffaudio2json_linux_x86-64_shared
+            target: x86_64-unknown-linux-gnu
+
+          - name: static
+            features: "--features build-ffmpeg"
+            exe: ffaudio2json_linux_arm64_static
+            target: aarch64-unknown-linux-gnu
+
+          - name: shared
+            features: "--no-default-features"
+            exe: ffaudio2json_linux_arm64_shared
+            target: aarch64-unknown-linux-gnu
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          target: ${{ matrix.target }}
+
+      - name: Setup cache
+        uses: Swatinem/rust-cache@v2
+
+      - run: sudo apt update
+
+      - name: Install clang
+        if: matrix.name == 'shared'
+        run: sudo apt-get install -y clang
+
+      - name: Install cross-compile dependencies
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: sudo apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libc6-dev-arm64-cross
+
+      - name: Install ffmpeg (shared, x86-64)
+        if: matrix.name == 'shared' && matrix.target == 'x86_64-unknown-linux-gnu'
+        run: sudo apt install -y libavcodec-dev libavformat-dev libavutil-dev pkg-config
+
+      - name: Download ffmpeg (shared, arm64)
+        if: matrix.name == 'shared' && matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          wget -O ffmpeg-n7.0-latest-linuxarm64-lgpl-shared-7.0.tar.xz https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.0-latest-linuxarm64-lgpl-shared-7.0.tar.xz
+          tar -xf ffmpeg-n7.0-latest-linuxarm64-lgpl-shared-7.0.tar.xz --overwrite
+          echo "FFMPEG_DIR=$(pwd)/ffmpeg-n7.0-latest-linuxarm64-lgpl-shared-7.0" >> $GITHUB_ENV
+
+      - name: Install static build dependencies
+        if: matrix.name == 'static'
+        run: sudo apt install -y yasm
+
+      - name: Configure cross-compile Cargo linker
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          mkdir -p .cargo
+          echo -e "\n[target.aarch64-unknown-linux-gnu]\nlinker = \"aarch64-linux-gnu-gcc\"" > .cargo/config.toml
+
+      - name: Build
+        run: |
+          cargo build --release --package ffaudio2json-cli ${{ matrix.features }} --target ${{ matrix.target }}
+          mv target/${{ matrix.target }}/release/ffaudio2json target/${{ matrix.target }}/release/${{ matrix.exe }}
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: target/${{ matrix.target }}/release/${{ matrix.exe }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+  build_macos:
+    strategy:
+      matrix:
+        include:
+          - name: static
+            features: "--features build-ffmpeg"
+            exe: ffaudio2json_macos_x86-64
+            os: macos-13
+
+          - name: shared
+            features: "--no-default-features"
+            exe: ffaudio2json_macos_x86-64_shared
+            os: macos-13
+
+          - name: static
+            features: "--features build-ffmpeg"
+            exe: ffaudio2json_macos_arm64
+            os: macos-latest
+
+          - name: shared
+            features: "--no-default-features"
+            exe: ffaudio2json_macos_arm64_shared
+            os: macos-latest
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+
+      - name: Setup cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install ffmpeg (shared)
+        if: matrix.name == 'shared'
+        run: brew install ffmpeg
+
+      - name: Install static build dependencies
+        if: matrix.name == 'static'
+        run: brew install yasm
+
+      - name: Build
+        run: |
+          cargo build --release --package ffaudio2json-cli ${{ matrix.features }}
+          mv target/release/ffaudio2json target/release/${{ matrix.exe }}
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: target/release/${{ matrix.exe }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

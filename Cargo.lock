@@ -365,7 +365,7 @@ dependencies = [
 [[package]]
 name = "ffmpeg-next"
 version = "7.0.2"
-source = "git+https://github.com/WilliamVenner/rust-ffmpeg.git?branch=feat/8-channel-sample-impl#fbef7bf003eb9afb07c5a413171f9eb37832220d"
+source = "git+https://github.com/zmwangx/rust-ffmpeg.git?rev=1922ed055f96c368628e5b543ec4c59ddfa01ff4#1922ed055f96c368628e5b543ec4c59ddfa01ff4"
 dependencies = [
  "bitflags 2.6.0",
  "ffmpeg-sys-next",
@@ -375,8 +375,7 @@ dependencies = [
 [[package]]
 name = "ffmpeg-sys-next"
 version = "7.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "972a460dd8e901b737ce0482bf71a837e1751e3dd7c8f8b0a4ead808e7f174a5"
+source = "git+https://github.com/WilliamVenner/rust-ffmpeg-sys.git?branch=feat/mingw-build-ffmpeg#fb146f94751af5784907f68ddb1a96947f91671e"
 dependencies = [
  "bindgen",
  "cc",

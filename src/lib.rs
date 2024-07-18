@@ -128,14 +128,20 @@ impl FfAudio2Json {
 		let writers = self.writers(&mut output, &output_path, input_samples.ceil() as usize)?;
 
 		log::debug!(
-			"Audio duration: {:?} ({} samples)\nCodec: {} Channel(s): {} Format: {:?} Sample Rate: {} Hz\nGenerating waveform...",
+			"Audio duration: {:?} ({} samples)",
 			Duration::from_secs_f64(input_duration),
 			input_samples,
+		);
+
+		log::debug!(
+			"Codec: {} Channel(s): {} Format: {:?} Sample Rate: {} Hz",
 			codec.description(),
 			decoder.channels(),
 			decoder.format(),
 			decoder.rate()
 		);
+
+		log::debug!("Generating waveform...",);
 
 		output.flush()?;
 		GeneratorContext::generate(

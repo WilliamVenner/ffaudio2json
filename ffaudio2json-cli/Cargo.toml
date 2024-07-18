@@ -8,12 +8,17 @@ description = "Convert audio files to JSON waveforms using FFmpeg"
 repository = "https://github.com/WilliamVenner/ffaudio2json"
 publish = false
 
+[features]
+default = ["static-ffmpeg"]
+build-ffmpeg = ["ffaudio2json/build-ffmpeg"]
+static-ffmpeg = ["ffaudio2json/static-ffmpeg"]
+
 [[bin]]
 name = "ffaudio2json"
 path = "src/main.rs"
 
 [dependencies]
-ffaudio2json = { path = "../" }
+ffaudio2json = { path = "../", default-features = false }
 clap = { version = "4", features = ["derive"] }
 stderrlog = "0.6"
 log = "0.4"

@@ -6,14 +6,24 @@ authors = ["William Venner <william@venner.io"]
 license = "MIT OR Apache-2.0"
 description = "Convert audio files to JSON waveforms using FFmpeg"
 repository = "https://github.com/WilliamVenner/ffaudio2json"
+readme = "README.md"
+
+[features]
+default = ["static-ffmpeg"]
+build-ffmpeg = ["ffmpeg-next/build"]
+static-ffmpeg = ["ffmpeg-next/static"]
 
 [workspace]
 members = ["ffaudio2json-cli"]
 default-members = ["ffaudio2json-cli"]
 
 [patch.crates-io.ffmpeg-next]
-git = "https://github.com/WilliamVenner/rust-ffmpeg.git"
-branch = "feat/8-channel-sample-impl"
+git = "https://github.com/zmwangx/rust-ffmpeg.git"
+rev = "1922ed055f96c368628e5b543ec4c59ddfa01ff4"
+
+[patch.crates-io.ffmpeg-sys-next]
+git = "https://github.com/WilliamVenner/rust-ffmpeg-sys.git"
+branch = "feat/mingw-build-ffmpeg"
 
 [profile.release]
 lto = true
@@ -21,9 +31,10 @@ codegen-units = 1
 strip = true
 
 [dependencies]
-ffmpeg-next = { version = "7", default-features = false, features = [
+ffmpeg-next = { version = "7.0", default-features = false, features = [
 	"codec",
 	"format",
+	"software-resampling",
 ] }
 thiserror = "1"
 log = "0.4"
