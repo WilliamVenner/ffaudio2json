@@ -18,7 +18,7 @@ jobs:
         include:
           - os: ubuntu-latest
             name: static
-            exe: ffaudio2json_win_x86-64.exe
+            exe: ffaudio2json_win_x86-64_static.exe
             features: "--features build-ffmpeg"
             target: x86_64-pc-windows-gnu
           - os: windows-latest
@@ -159,7 +159,7 @@ jobs:
         include:
           - name: static
             features: "--features build-ffmpeg"
-            exe: ffaudio2json_macos_x86-64
+            exe: ffaudio2json_macos_x86-64_static
             os: macos-13
 
           - name: shared
@@ -169,7 +169,7 @@ jobs:
 
           - name: static
             features: "--features build-ffmpeg"
-            exe: ffaudio2json_macos_arm64
+            exe: ffaudio2json_macos_arm64_static
             os: macos-latest
 
           - name: shared

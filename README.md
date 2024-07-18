@@ -89,18 +89,18 @@ ffaudio2json offers many different builds that are suitable for different needs.
 
 **Bold = Recommended**
 
-| OS          | Arch               | Linking     | Download                                                                                                                                          |
-| ----------- | ------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Linux**   | **x86-64**         | **Dynamic** | [**`ffaudio2json_linux_x86-64_shared`**](https://github.com/WilliamVenner/ffaudio2json/releases/latest/download/ffaudio2json_linux_x86-64_shared) |
-| Linux       | x86-64             | Static      | [`ffaudio2json_linux_x86-64_static`](https://github.com/WilliamVenner/ffaudio2json/releases/latest/download/ffaudio2json_linux_x86-64_static)     |
-| **Linux**   | **arm64**          | **Dynamic** | [**`ffaudio2json_linux_arm64_shared`**](https://github.com/WilliamVenner/ffaudio2json/releases/latest/download/ffaudio2json_linux_arm64_shared)   |
-| Linux       | arm64              | Static      | [`ffaudio2json_linux_arm64_static`](https://github.com/WilliamVenner/ffaudio2json/releases/latest/download/ffaudio2json_linux_arm64_static)       |
-| **macOS**   | **arm64 (M1)**     | **Static**  | [**`ffaudio2json_macos_arm64`**](https://github.com/WilliamVenner/ffaudio2json/releases/latest/download/ffaudio2json_macos_arm64)                 |
-| macOS       | arm64 (M1)         | Dynamic     | [`ffaudio2json_macos_arm64_shared`](https://github.com/WilliamVenner/ffaudio2json/releases/latest/download/ffaudio2json_macos_arm64_shared)       |
-| **macOS**   | **x86-64 (Intel)** | **Static**  | [**`ffaudio2json_macos_x86-64`**](https://github.com/WilliamVenner/ffaudio2json/releases/latest/download/ffaudio2json_macos_x86-64)               |
-| macOS       | x86-64 (Intel)     | Dynamic     | [`ffaudio2json_macos_x86-64_shared`](https://github.com/WilliamVenner/ffaudio2json/releases/latest/download/ffaudio2json_macos_x86-64_shared)     |
-| **Windows** | **x86-64**         | **Static**  | [**`ffaudio2json_win_x86-64.exe`**](https://github.com/WilliamVenner/ffaudio2json/releases/latest/download/ffaudio2json_win_x86-64.exe)           |
-| Windows     | x86-64             | Dynamic     | [`ffaudio2json_win_x86-64_shared.exe`](https://github.com/WilliamVenner/ffaudio2json/releases/latest/download/ffaudio2json_win_x86-64_shared.exe) |
+| OS          | Arch               | Linking     | Download                                                                                                                                              |
+| ----------- | ------------------ | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Linux**   | **x86-64**         | **Dynamic** | [**`ffaudio2json_linux_x86-64_shared`**](https://github.com/WilliamVenner/ffaudio2json/releases/latest/download/ffaudio2json_linux_x86-64_shared)     |
+| Linux       | x86-64             | Static      | [`ffaudio2json_linux_x86-64_static`](https://github.com/WilliamVenner/ffaudio2json/releases/latest/download/ffaudio2json_linux_x86-64_static)         |
+| **Linux**   | **arm64**          | **Dynamic** | [**`ffaudio2json_linux_arm64_shared`**](https://github.com/WilliamVenner/ffaudio2json/releases/latest/download/ffaudio2json_linux_arm64_shared)       |
+| Linux       | arm64              | Static      | [`ffaudio2json_linux_arm64_static`](https://github.com/WilliamVenner/ffaudio2json/releases/latest/download/ffaudio2json_linux_arm64_static)           |
+| **macOS**   | **arm64 (M1)**     | **Dynamic** | [**`ffaudio2json_macos_arm64_shared`**](https://github.com/WilliamVenner/ffaudio2json/releases/latest/download/ffaudio2json_macos_arm64_shared)       |
+| macOS       | arm64 (M1)         | Static      | [`ffaudio2json_macos_arm64_static`](https://github.com/WilliamVenner/ffaudio2json/releases/latest/download/ffaudio2json_macos_arm64_static)           |
+| **macOS**   | **x86-64 (Intel)** | **Dynamic** | [**`ffaudio2json_macos_x86-64_shared`**](https://github.com/WilliamVenner/ffaudio2json/releases/latest/download/ffaudio2json_macos_x86-64_shared)     |
+| macOS       | x86-64 (Intel)     | Static      | [`ffaudio2json_macos_x86-64_static`](https://github.com/WilliamVenner/ffaudio2json/releases/latest/download/ffaudio2json_macos_x86-64_static)         |
+| **Windows** | **x86-64**         | **Static**  | [**`ffaudio2json_win_x86-64_static.exe`**](https://github.com/WilliamVenner/ffaudio2json/releases/latest/download/ffaudio2json_win_x86-64_static.exe) |
+| Windows     | x86-64             | Dynamic     | [`ffaudio2json_win_x86-64_shared.exe`](https://github.com/WilliamVenner/ffaudio2json/releases/latest/download/ffaudio2json_win_x86-64_shared.exe)     |
 
 ### Dynamic Linking
 
