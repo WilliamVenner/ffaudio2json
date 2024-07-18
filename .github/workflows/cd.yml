@@ -24,7 +24,7 @@ jobs:
           - os: windows-latest
             name: shared
             exe: ffaudio2json_win_x86-64_shared.exe
-            features: "--no-default-features"
+            features: ""
             target: x86_64-pc-windows-msvc
     runs-on: ${{ matrix.os }}
     steps:
@@ -83,7 +83,7 @@ jobs:
             target: x86_64-unknown-linux-gnu
 
           - name: shared
-            features: "--no-default-features"
+            features: ""
             exe: ffaudio2json_linux_x86-64_shared
             target: x86_64-unknown-linux-gnu
 
@@ -93,7 +93,7 @@ jobs:
             target: aarch64-unknown-linux-gnu
 
           - name: shared
-            features: "--no-default-features"
+            features: ""
             exe: ffaudio2json_linux_arm64_shared
             target: aarch64-unknown-linux-gnu
 
@@ -163,7 +163,7 @@ jobs:
             os: macos-13
 
           - name: shared
-            features: "--no-default-features"
+            features: ""
             exe: ffaudio2json_macos_x86-64_shared
             os: macos-13
 
@@ -173,7 +173,7 @@ jobs:
             os: macos-latest
 
           - name: shared
-            features: "--no-default-features"
+            features: ""
             exe: ffaudio2json_macos_arm64_shared
             os: macos-latest
 

@@ -9,7 +9,7 @@ repository = "https://github.com/WilliamVenner/ffaudio2json"
 publish = false
 
 [features]
-default = ["static-ffmpeg"]
+default = []
 build-ffmpeg = ["ffaudio2json/build-ffmpeg"]
 static-ffmpeg = ["ffaudio2json/static-ffmpeg"]
 
