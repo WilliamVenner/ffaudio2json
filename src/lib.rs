@@ -6,10 +6,14 @@
 //!
 //! ## Building
 //!
-//! This library/binary can be built/compiled just like any normal Rust program with `cargo build` or `cargo build --release`
-//! (for an optimized build), however, you will probably want to also read the
-//! [ffmpeg-next build instructions](https://github.com/zmwangx/rust-ffmpeg/wiki/Notes-on-building)
-//! as it is a dependency with special build requirements.
+//! [Instructions](https://github.com/WilliamVenner/ffaudio2json#building)
+//!
+//! ## Feature Flags
+//!
+//! | Feature         | Default | Description                                                     |
+//! |-----------------|---------|-----------------------------------------------------------------|
+//! | `ffmpeg-static` | No      | Statically links ffmpeg instead of linking to shared libraries. |
+//! | `ffmpeg-build`  | No      | Builds ffmpeg from source and statically links to it.           |
 //!
 //! ## Example Output
 //!
@@ -27,6 +31,9 @@
 //! ```
 
 #![warn(missing_docs)]
+
+#[cfg(all(windows, feature = "ffmpeg-build", not(target_env = "gnu")))]
+compile_error!("The 'ffmpeg-build' feature is not supported on Windows with the MSVC toolchain. Please use MinGW and the GNU toolchain.");
 
 extern crate ffmpeg_next as ffmpeg;
 

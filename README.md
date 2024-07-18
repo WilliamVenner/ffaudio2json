@@ -83,7 +83,7 @@ Options:
 
 ffaudio2json offers many different builds that are suitable for different needs.
 
-**Shared** linking means the build does not include ffmpeg and you will need to install it to your system as a shared library. [Instructions](#Shared_Linking)
+**Shared** linking means the build does not include ffmpeg and you will need to install it to your system as a shared library. [Instructions](#shared-linking)
 
 **Static** linking means the build should be "portable" and ran without having to install additional dependencies (including ffmpeg)
 
@@ -169,3 +169,10 @@ You will probably need to move the following DLLs from `ffaudio2json-ffmpeg-rele
 - `avutil-59.dll`
 - `avformat-61.dll`
 - `swresample-5.dll`
+
+## Feature Flags
+
+| Feature         | Default | Description                                                     |
+| --------------- | ------- | --------------------------------------------------------------- |
+| `ffmpeg-static` | No      | Statically links ffmpeg instead of linking to shared libraries. |
+| `ffmpeg-build`  | No      | Builds ffmpeg from source and statically links to it.           |
