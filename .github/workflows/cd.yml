@@ -37,6 +37,9 @@ jobs:
           profile: minimal
           target: ${{ matrix.target }}
 
+      - name: Install cargo cross
+        run: cargo install cross
+
       - name: Setup cache
         uses: Swatinem/rust-cache@v2
 
@@ -63,7 +66,7 @@ jobs:
 
       - name: Build
         run: |
-          cargo build --release --package ffaudio2json-cli ${{ matrix.features }} --target ${{ matrix.target }}
+          cargo cross build --release --package ffaudio2json-cli ${{ matrix.features }} --target ${{ matrix.target }}
           mv target/${{ matrix.target }}/release/ffaudio2json.exe target/${{ matrix.target }}/release/${{ matrix.exe }}
 
       - name: Release
@@ -107,6 +110,9 @@ jobs:
           profile: minimal
           target: ${{ matrix.target }}
 
+      - name: Install cargo cross
+        run: cargo install cross
+
       - name: Setup cache
         uses: Swatinem/rust-cache@v2
 
@@ -143,7 +149,7 @@ jobs:
 
       - name: Build
         run: |
-          cargo build --release --package ffaudio2json-cli ${{ matrix.features }} --target ${{ matrix.target }}
+          cargo cross build --release --package ffaudio2json-cli ${{ matrix.features }} --target ${{ matrix.target }}
           mv target/${{ matrix.target }}/release/ffaudio2json target/${{ matrix.target }}/release/${{ matrix.exe }}
 
       - name: Release
@@ -186,6 +192,9 @@ jobs:
           toolchain: stable
           profile: minimal
 
+      - name: Install cargo cross
+        run: cargo install cross
+
       - name: Setup cache
         uses: Swatinem/rust-cache@v2
 
@@ -199,7 +208,7 @@ jobs:
 
       - name: Build
         run: |
-          cargo build --release --package ffaudio2json-cli ${{ matrix.features }}
+          cargo cross build --release --package ffaudio2json-cli ${{ matrix.features }}
           mv target/release/ffaudio2json target/release/${{ matrix.exe }}
 
       - name: Release
