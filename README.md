@@ -174,5 +174,5 @@ You will probably need to move the following DLLs from `ffaudio2json-ffmpeg-rele
 
 | Feature         | Default | Description                                                     |
 | --------------- | ------- | --------------------------------------------------------------- |
-| `ffmpeg-static` | No      | Statically links ffmpeg instead of linking to shared libraries. |
-| `ffmpeg-build`  | No      | Builds ffmpeg from source and statically links to it.           |
+| `static-ffmpeg` | No      | Statically links ffmpeg instead of linking to shared libraries. |
+| `build-ffmpeg`  | No      | Builds ffmpeg from source and statically links to it.           |
