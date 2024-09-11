@@ -54,7 +54,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 					image.put_pixel(
 						(i * SAMPLE_WIDTH) + (i * SAMPLE_GAP) + x,
 						(((SAMPLE_HEIGHT as f64 * 0.5) + (sample as f64 * 0.5)) as u32 - y - 1)
-							+ (j as u32 * SAMPLE_HEIGHT) + (j as u32 * SAMPLE_GAP),
+							+ (j as u32 * SAMPLE_HEIGHT)
+							+ (j as u32 * SAMPLE_GAP),
 						SAMPLE_COLOR,
 					);
 				}
