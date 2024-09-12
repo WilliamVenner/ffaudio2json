@@ -1,0 +1,10 @@
+[target.x86_64-unknown-linux-gnu]
+image = "ubuntu:20.04"
+pre-build = [
+	"export DEBIAN_FRONTEND=noninteractive",
+	"apt-get update",
+	"apt-get install -y libavcodec-dev libavformat-dev libavutil-dev pkg-config clang build-essential git",
+]
+
+[target.aarch64-unknown-linux-gnu]
+dockerfile = "build/shared/aarch64-unknown-linux-gnu/Dockerfile"

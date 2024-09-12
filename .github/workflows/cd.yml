@@ -37,9 +37,6 @@ jobs:
           profile: minimal
           target: ${{ matrix.target }}
 
-      - name: Install cargo cross
-        run: cargo install cross
-
       - name: Setup cache
         uses: Swatinem/rust-cache@v2
 
@@ -66,7 +63,7 @@ jobs:
 
       - name: Build
         run: |
-          cargo cross build --release --package ffaudio2json-cli ${{ matrix.features }} --target ${{ matrix.target }}
+          cargo build --release --package ffaudio2json-cli ${{ matrix.features }} --target ${{ matrix.target }}
           mv target/${{ matrix.target }}/release/ffaudio2json.exe target/${{ matrix.target }}/release/${{ matrix.exe }}
 
       - name: Release
@@ -113,43 +110,18 @@ jobs:
       - name: Install cargo cross
         run: cargo install cross
 
-      - name: Setup cache
-        uses: Swatinem/rust-cache@v2
+      - name: Install Cross config
+        run: cp build/${{ matrix.name }}/Cross.toml Cross.toml
 
-      - run: sudo apt update
-
-      - name: Install clang
-        if: matrix.name == 'shared'
-        run: sudo apt-get install -y clang
-
-      - name: Install cross-compile dependencies
-        if: matrix.target == 'aarch64-unknown-linux-gnu'
-        run: sudo apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libc6-dev-arm64-cross
-
-      - name: Install ffmpeg (shared, x86-64)
-        if: matrix.name == 'shared' && matrix.target == 'x86_64-unknown-linux-gnu'
-        run: sudo apt install -y libavcodec-dev libavformat-dev libavutil-dev pkg-config
-
-      - name: Download ffmpeg (shared, arm64)
-        if: matrix.name == 'shared' && matrix.target == 'aarch64-unknown-linux-gnu'
-        run: |
-          wget -O ffmpeg-n7.0-latest-linuxarm64-lgpl-shared-7.0.tar.xz https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.0-latest-linuxarm64-lgpl-shared-7.0.tar.xz
-          tar -xf ffmpeg-n7.0-latest-linuxarm64-lgpl-shared-7.0.tar.xz --overwrite
-          echo "FFMPEG_DIR=$(pwd)/ffmpeg-n7.0-latest-linuxarm64-lgpl-shared-7.0" >> $GITHUB_ENV
-
-      - name: Install static build dependencies
-        if: matrix.name == 'static'
-        run: sudo apt install -y yasm
-
-      - name: Configure cross-compile Cargo linker
+      - name: Install Cargo config
         if: matrix.target == 'aarch64-unknown-linux-gnu'
         run: |
           mkdir -p .cargo
-          echo -e "\n[target.aarch64-unknown-linux-gnu]\nlinker = \"aarch64-linux-gnu-gcc\"" > .cargo/config.toml
+          cp build/cargo/config.toml .cargo/config.toml
 
       - name: Build
         run: |
-          cargo cross build --release --package ffaudio2json-cli ${{ matrix.features }} --target ${{ matrix.target }}
+          cross build --release --package ffaudio2json-cli ${{ matrix.features }} --target ${{ matrix.target }}
           mv target/${{ matrix.target }}/release/ffaudio2json target/${{ matrix.target }}/release/${{ matrix.exe }}
 
       - name: Release
@@ -192,9 +164,6 @@ jobs:
           toolchain: stable
           profile: minimal
 
-      - name: Install cargo cross
-        run: cargo install cross
-
       - name: Setup cache
         uses: Swatinem/rust-cache@v2
 
@@ -208,7 +177,7 @@ jobs:
 
       - name: Build
         run: |
-          cargo cross build --release --package ffaudio2json-cli ${{ matrix.features }}
+          cargo build --release --package ffaudio2json-cli ${{ matrix.features }}
           mv target/release/ffaudio2json target/release/${{ matrix.exe }}
 
       - name: Release
