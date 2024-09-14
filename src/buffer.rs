@@ -11,7 +11,6 @@ pub struct SampleBuffer<Scalar: PlanarSample, Composite: PlanarSample = Scalar> 
 }
 impl<Scalar: PlanarSample, Composite: PlanarSample> SampleBuffer<Scalar, Composite> {
 	pub fn with_capacity(capacity: usize) -> Self {
-		debug_assert!(capacity > 0);
 		Self {
 			buffer: Vec::with_capacity(capacity),
 			_phantom: PhantomData,

@@ -115,6 +115,12 @@ impl FfAudio2Json {
 			.or_else(|| {
 				(|| {
 					let mut ictx = ffmpeg::format::input(&self.input)?;
+
+					if ictx.packets().next().is_none() {
+						// No packets. Empty file.
+						return Ok(Some(0));
+					}
+
 					// Seek to the last frame
 					ictx.seek(i64::MAX, 0..i64::MAX)?;
 					let pts = ictx.packets().last().and_then(|(_, packet)| packet.pts());
@@ -180,7 +186,7 @@ impl FfAudio2Json {
 	fn writers(&self, output: &mut (impl Write + Seek), output_path: &Path, input_samples: usize) -> Result<Channels<ChannelWriter>, Error> {
 		let mut writers = Channels::<ChannelWriter>::default();
 
-		let samples_width = ((self.samples as usize).min(input_samples) * (self.precision + 3)) - 1;
+		let samples_width = ((self.samples as usize).min(input_samples) * (self.precision + 3)).saturating_sub(1);
 
 		self.channels.iter().copied().try_for_each(|channel| {
 			write!(output, "\n  \"{channel}\":[")?;
