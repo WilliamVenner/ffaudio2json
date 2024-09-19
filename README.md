@@ -18,7 +18,7 @@ ffaudio2json song.wav --channels "left right mid side min max" -o song.json
 
 ```json
 {
-  "_generator": "ffaudio2json version 0.1.1 on x86_64-pc-windows-msvc (https://github.com/WilliamVenner/ffaudio2json)",
+  "_generator": "ffaudio2json version 0.1.2 on x86_64-pc-windows-msvc (https://github.com/WilliamVenner/ffaudio2json)",
   "left": [
     0.947125, 0.901331, 0.76628, 0.578968, 0.744371, 0.57511, 0.624754, 0.7391,
     0.534745, 0.561727, 0.565447, 0.777101, 0.633872, 0.443988, 0.451541

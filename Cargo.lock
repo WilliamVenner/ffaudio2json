@@ -337,7 +337,7 @@ dependencies = [
 
 [[package]]
 name = "ffaudio2json"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "build-data",
  "derive_builder",
@@ -352,7 +352,7 @@ dependencies = [
 
 [[package]]
 name = "ffaudio2json-cli"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "clap",
  "ffaudio2json",
